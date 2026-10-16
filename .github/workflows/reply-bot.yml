@@ -1,0 +1,51 @@
+name: Reply Bot Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  reply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Reply to Telegram messages
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os, time, json, urllib.request, urllib.parse
+
+          token = os.environ["TELEGRAM_BOT_TOKEN"]
+          base = f"https://api.telegram.org/bot{token}/"
+          offset = 0
+          end = time.time() + 480
+
+          def call(method, data=None):
+              body = urllib.parse.urlencode(data or {}).encode()
+              req = urllib.request.Request(base + method, data=body)
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return json.loads(r.read())
+
+          print("Bot is listening for messages...")
+          while time.time() < end:
+              result = call("getUpdates", {
+                  "offset": offset, "timeout": 20
+              })
+              for update in result.get("result", []):
+                  offset = update["update_id"] + 1
+                  msg = update.get("message", {})
+                  chat = msg.get("chat", {})
+                  text = msg.get("text", "")
+                  if not chat or not text:
+                      continue
+                  if text.startswith("/start"):
+                      reply = "هلا بيك! بوت الذهب التجريبي اشتغل ❤️"
+                  elif text.startswith("/test"):
+                      reply = "تم الاختبار بنجاح. الخطوة الجاية إشارات XAUUSD."
+                  else:
+                      reply = "وصلت رسالتك. ابعث /test للاختبار."
+                  call("sendMessage", {
+                      "chat_id": chat["id"], "text": reply
+                  })
+          print("Test finished.")
+          PY
