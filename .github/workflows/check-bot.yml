@@ -1,0 +1,14 @@
+name: Check Telegram Bot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check bot connection
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          python -c "import os, urllib.request; u='https://api.telegram.org/bot'+os.environ['TELEGRAM_BOT_TOKEN']+'/getMe'; print(urllib.request.urlopen(u, timeout=15).read().decode())"
